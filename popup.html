@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ada&Ava Desktop 设置</title>
+  <style>
+    body {
+      font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+      width: 300px;
+      padding: 15px;
+      margin: 0;
+      background-color: #f5f5f5;
+    }
+    
+    h1 {
+      font-size: 18px;
+      margin-top: 0;
+      margin-bottom: 15px;
+      color: #333;
+      text-align: center;
+    }
+    
+    .section {
+      background-color: white;
+      border-radius: 8px;
+      padding: 15px;
+      margin-bottom: 15px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+    
+    .section-title {
+      font-size: 14px;
+      font-weight: bold;
+      margin-bottom: 10px;
+      color: #333;
+    }
+    
+    .language-option {
+      display: flex;
+      align-items: center;
+      padding: 8px 0;
+      cursor: pointer;
+      border-radius: 4px;
+      transition: background-color 0.2s;
+    }
+    
+    .language-option:hover {
+      background-color: #f0f0f0;
+    }
+    
+    .language-option.active {
+      background-color: #e6f4ff;
+    }
+    
+    .language-radio {
+      margin-right: 10px;
+    }
+    
+    .language-name {
+      flex: 1;
+    }
+    
+    .footer {
+      text-align: center;
+      font-size: 12px;
+      color: #666;
+      margin-top: 15px;
+    }
+    
+    .footer a {
+      color: #4285f4;
+      text-decoration: none;
+    }
+    
+    .footer a:hover {
+      text-decoration: underline;
+    }
+    
+    .version {
+      font-size: 11px;
+      color: #999;
+      margin-top: 5px;
+    }
+  </style>
+</head>
+<body>
+  <h1 data-i18n="settings">设置</h1>
+  
+  <div class="section">
+    <div class="section-title" data-i18n="language">语言</div>
+    <div class="language-options">
+      <div class="language-option" data-lang="zh-CN">
+        <input type="radio" name="language" id="lang-zh-CN" class="language-radio" value="zh-CN">
+        <label for="lang-zh-CN" class="language-name" data-i18n="language_zh_cn">简体中文</label>
+      </div>
+      <div class="language-option" data-lang="zh-TW">
+        <input type="radio" name="language" id="lang-zh-TW" class="language-radio" value="zh-TW">
+        <label for="lang-zh-TW" class="language-name" data-i18n="language_zh_tw">繁体中文</label>
+      </div>
+      <div class="language-option" data-lang="en">
+        <input type="radio" name="language" id="lang-en" class="language-radio" value="en">
+        <label for="lang-en" class="language-name" data-i18n="language_en">English</label>
+      </div>
+    </div>
+  </div>
+  
+  <div class="footer">
+    <div>
+      <a href="https://ko-fi.com/watertang" target="_blank" data-i18n="support_developer">支持开发者</a>
+    </div>
+    <div class="version">v1.1</div>
+  </div>
+  
+  <script type="module" src="js/popup.js"></script>
+</body>
+</html> 

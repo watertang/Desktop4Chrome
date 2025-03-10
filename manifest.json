@@ -1,0 +1,30 @@
+{
+  "manifest_version": 3,
+  "name": "Ada&Ava Desktop for Chrome",
+  "version": "1.1",
+  "description": "自定义新标签页，显示背景图片、时间日期和网址快捷方式，支持自由拖拽排列和编辑",
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "permissions": ["storage", "tabs"],
+  "host_permissions": ["*://*/*"],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "chrome_url_overrides": {
+    "newtab": "newtab.html"
+  },
+  "background": {
+    "service_worker": "js/background.js",
+    "type": "module"
+  }
+} 

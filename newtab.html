@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title data-i18n="new_tab">新标签页</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+</head>
+<body>
+  <div class="container">
+    <!-- 固定信息区域 -->
+    <div class="info-container">
+      <!-- 城市信息将通过JavaScript动态添加 -->
+      <div id="cities-display">
+        <!-- 默认显示两个城市 -->
+      </div>
+    </div>
+    
+    <!-- 网址快捷方式区域 -->
+    <div class="shortcuts-container">
+      <div class="shortcuts-grid"></div>
+      
+      <!-- 导入/导出按钮 -->
+      <div class="data-actions">
+        <button id="export-data" class="data-button export-button" data-i18n="export_data">
+          <i class="fas fa-download"></i> 导出数据
+        </button>
+        <button id="import-data" class="data-button import-button" data-i18n="import_data">
+          <i class="fas fa-upload"></i> 导入数据
+        </button>
+        <input type="file" id="file-input" class="file-input" accept=".json">
+      </div>
+    </div>
+  </div>
+  
+  <!-- 编辑模态框 -->
+  <div class="edit-modal" id="edit-modal" style="display: none;">
+    <div class="modal-content">
+      <h3 data-i18n="edit_shortcut">编辑快捷方式</h3>
+      <form id="shortcut-form">
+        <div class="form-group">
+          <label for="shortcut-name" data-i18n="shortcut_name">名称</label>
+          <input type="text" id="shortcut-name" required>
+        </div>
+        
+        <!-- 多URL输入区域 -->
+        <div id="urls-container">
+          <div class="form-group url-group">
+            <label for="shortcut-url-0" data-i18n="shortcut_url">网址1</label>
+            <div class="url-input-container">
+              <input type="url" class="shortcut-url" id="shortcut-url-0" required>
+              <div class="url-buttons"></div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="form-group icon-preview-group">
+          <label data-i18n="shortcut_icon">图标</label>
+          <div class="icon-preview-container">
+            <div class="icon-preview" id="icon-preview" title="双击图标可编辑">
+              <!-- 图标预览区域 -->
+              <div class="icon-placeholder">
+                <i class="fas fa-image"></i>
+              </div>
+            </div>
+            <!-- 图标操作按钮 -->
+            <div class="icon-buttons">
+              <button type="button" class="icon-btn" id="upload-icon-btn" title="打开本地图片">
+                <i class="fas fa-folder-open"></i>
+              </button>
+              <button type="button" class="icon-btn" id="enter-icon-url-btn" title="输入图片网址">
+                <i class="fas fa-link"></i>
+              </button>
+              <button type="button" class="icon-btn" id="reset-icon-btn" title="重设图标">
+                <i class="fas fa-undo"></i>
+              </button>
+            </div>
+          </div>
+          <input type="hidden" id="shortcut-icon">
+          <input type="file" id="icon-file-input" accept="image/*" style="display: none;">
+        </div>
+        <div class="form-buttons">
+          <button type="button" class="delete-btn" style="display: none;" data-i18n="delete">删除</button>
+          <button type="button" class="cancel-btn" data-i18n="cancel">取消</button>
+          <button type="submit" class="save-btn" data-i18n="save">保存</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  
+  <!-- 城市编辑模态框 -->
+  <div class="city-edit-modal" style="display: none;">
+    <div class="modal-content">
+      <h3 data-i18n="edit_city_list">编辑城市列表</h3>
+      <form id="city-form">
+        <!-- 城市列表区域 -->
+        <div id="cities-container">
+          <!-- 城市项将通过JavaScript动态添加，示例结构如下 -->
+          <!-- 
+          <div class="city-item" draggable="true" data-city-id="vancouver">
+            <div class="drag-handle">
+              <i class="fas fa-grip-lines"></i>
+            </div>
+            <div class="city-name">温哥华</div>
+            <div class="city-controls">
+              <label class="switch">
+                <input type="checkbox" checked>
+                <span class="slider round"></span>
+              </label>
+              <button type="button" class="delete-city-btn">
+                <i class="fas fa-trash"></i>
+              </button>
+            </div>
+          </div>
+          -->
+        </div>
+        
+        <!-- 添加新城市 -->
+        <div class="form-group">
+          <label for="new-city" data-i18n="add_city">添加城市</label>
+          <div class="city-search-container">
+            <input type="text" id="new-city" data-i18n-placeholder="search_city" placeholder="Search city...">
+            <button type="button" id="add-city-btn" data-i18n="add">添加</button>
+          </div>
+          <div id="city-search-results" class="city-search-results"></div>
+        </div>
+        
+        <div class="form-buttons">
+          <button type="button" class="city-cancel-btn" data-i18n="cancel">取消</button>
+          <button type="submit" class="city-save-btn" data-i18n="save">保存</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  
+  <!-- 日期格式模态框 -->
+  <div class="format-dialog" style="display: none;">
+    <div class="format-dialog-content">
+      <h3 data-i18n="date_format_title">Custom Date Format</h3>
+      <div class="format-options">
+        <div class="format-option" data-format="YYYY-MM-DD" data-i18n="date_format_ymd">Year-Month-Day (2023-01-31)</div>
+        <div class="format-option" data-format="MM/DD/YYYY" data-i18n="date_format_mdy">Month/Day/Year (01/31/2023)</div>
+        <div class="format-option" data-format="DD/MM/YYYY" data-i18n="date_format_dmy">Day/Month/Year (31/01/2023)</div>
+        <div class="format-option" data-format="YYYY年MM月DD日" data-i18n="date_format_chinese">Chinese Format (2023年01月31日)</div>
+        <div class="format-option" data-format="MMM DD, YYYY" data-i18n="date_format_english">English Format (Jan 31, 2023)</div>
+        <div class="format-option" data-format="DD MMM YYYY" data-i18n="date_format_european">European Format (31 Jan 2023)</div>
+      </div>
+      <div class="format-buttons">
+        <button class="cancel-format-btn" data-i18n="cancel">Cancel</button>
+        <button class="save-format-btn" data-i18n="save">Save</button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- 图标URL输入对话框 -->
+  <div class="icon-url-dialog" id="icon-url-dialog">
+    <div class="icon-url-dialog-content">
+      <h3 data-i18n="enter_icon_url">输入图标URL</h3>
+      <div class="icon-url-input-group">
+        <input type="url" id="icon-url-input" data-i18n-placeholder="icon_url_placeholder" placeholder="请输入图标的URL地址">
+      </div>
+      <div class="icon-url-dialog-buttons">
+        <button type="button" class="icon-url-cancel-btn" id="icon-url-cancel-btn" data-i18n="cancel">取消</button>
+        <button type="button" class="icon-url-confirm-btn" id="icon-url-confirm-btn" data-i18n="save">保存</button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- 图片编辑器模态框 -->
+  <div class="image-editor-modal" id="image-editor-modal" style="display: none;">
+    <div class="image-editor-content">
+      <h3 data-i18n="image_editor_title">图片编辑器</h3>
+      
+      <!-- 图片来源选择 -->
+      <div class="image-source-container" style="display: none;">
+        <div class="image-source-buttons">
+          <button type="button" class="image-source-btn" id="load-image-url-btn" data-i18n="enter_image_url">
+            <i class="fas fa-link"></i> <span>输入图片网址</span>
+          </button>
+          <button type="button" class="image-source-btn" id="load-image-local-btn" data-i18n="upload_image">
+            <i class="fas fa-folder-open"></i> <span>打开本地图片</span>
+          </button>
+        </div>
+        <div class="image-url-input-container" style="display: none;">
+          <input type="url" id="image-url-input" data-i18n-placeholder="image_url_placeholder" placeholder="请输入图片的URL地址">
+          <button type="button" id="load-url-image-btn" data-i18n="load_image">加载图片</button>
+        </div>
+        <input type="file" id="image-file-input" accept="image/jpeg,image/png,image/webp" style="display: none;">
+      </div>
+      
+      <!-- 编辑区域 -->
+      <div class="editor-workspace">
+        <div class="canvas-container">
+          <canvas id="image-canvas"></canvas>
+          <div id="selection-box" class="selection-box"></div>
+        </div>
+        <div class="editor-controls">
+          <div class="color-picker-container">
+            <div class="color-preview" id="color-preview"></div>
+            <button type="button" id="color-picker-btn">
+              <i class="fas fa-eye-dropper"></i>
+            </button>
+          </div>
+          <div class="editor-instructions">
+            <p data-i18n="editor_instruction_1">1. 拖动选择框到合适位置</p>
+            <p data-i18n="editor_instruction_2">2. 调整选择框大小</p>
+            <p data-i18n="editor_instruction_3">3. 点击吸管选择背景色</p>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 按钮区域 -->
+      <div class="editor-buttons">
+        <button type="button" class="editor-cancel-btn" id="editor-cancel-btn" data-i18n="cancel">取消</button>
+        <button type="button" class="editor-apply-btn" id="editor-apply-btn" data-i18n="apply">应用</button>
+      </div>
+    </div>
+  </div>
+  
+  <script type="module" src="js/newtab.js"></script>
+</body>
+</html> 
