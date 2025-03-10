@@ -24,4 +24,9 @@ Desktop4Chrome_publish.zip
 *.docx
 *.txt
 !README.md
-!LICENSE.txt 
+!LICENSE.txt
+!privacy_policy.txt
+!privacy_policy_en.txt
+!promo_*.txt
+!screenshot_*.txt
+!submission_*.txt 

@@ -1,0 +1,14 @@
+## Screenshot 1: Main Interface
+Beautiful new tab page main interface, showcasing an elegant background, dual-city time display, and customized website shortcuts. The interface is clean and intuitive, with information clearly presented.
+
+## Screenshot 2: Edit Mode
+In edit mode, you can freely add, edit, and move shortcuts. Each shortcut can be configured with multiple URLs, supporting one-click opening of multiple related websites.
+
+## Screenshot 3: City Management
+The city management interface supports searching and adding 100+ global cities, allows reordering through drag-and-drop, and setting default cities to display. Supports both English and Chinese search.
+
+## Screenshot 4: Background Settings
+The background settings interface supports uploading local images or using network image URLs, with options to adjust how backgrounds are displayed, making your new tab page more personalized.
+
+## Screenshot 5: Data Management
+The data management feature supports exporting and importing settings, making it easy for users to back up and restore their configurations, or sync settings between different devices. 

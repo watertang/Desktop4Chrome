@@ -1,0 +1,60 @@
+# Ada&Ava Desktop for Chrome Privacy Policy
+
+Last Updated: March 10, 2024
+
+## Introduction
+
+Ada&Ava Desktop for Chrome (hereinafter referred to as "this extension") is a Chrome new tab page customization extension. This privacy policy is intended to explain how this extension collects, uses, and protects user information.
+
+## Information Collection and Use
+
+### Information NOT collected by this extension:
+- Personal identity information
+- Browsing history
+- Search records
+- Form data
+- Login credentials
+- Any personally identifiable information
+
+### Information stored by this extension:
+- User-customized shortcuts (URLs, names, and icons)
+- User-selected background images
+- User-set city list and display preferences
+- User interface preferences
+
+**All of this information is stored ONLY on the user's local device** using Chrome's storage.local API and is not uploaded to any servers or shared with any third parties.
+
+## Permissions Explanation
+
+This extension requests the following permissions, used only to provide core functionality:
+
+1. **storage**: Used to store user settings and preferences locally.
+2. **tabs**: Used to open new tabs when users click on shortcuts.
+3. **host_permissions**: Used to load website icons and background images.
+
+## Data Security
+
+Since all data is stored on the user's local device, this extension does not involve data transmission security issues. Users can back up data at any time using the extension's export function or restore data using the import function.
+
+## Third-Party Services
+
+This extension does not use any third-party analytics services, advertising services, or tracking tools.
+
+## Children's Privacy
+
+This extension is not targeted at children under 13 years of age and does not knowingly collect personal information from children.
+
+## Privacy Policy Changes
+
+If we make significant changes to the privacy policy, we will notify users through the extension update notes.
+
+## Contact Information
+
+If you have any questions or suggestions regarding this privacy policy, please contact us through:
+
+- GitHub: [https://github.com/watertang/Desktop4Chrome](https://github.com/watertang/Desktop4Chrome)
+- Email: [Your Email Address]
+
+---
+
+This privacy policy was last updated on March 10, 2024. 
