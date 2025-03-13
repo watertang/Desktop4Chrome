@@ -19,6 +19,43 @@
   <a href="#中文说明">中文说明</a>
 </p>
 
+## 📸 Screenshots
+
+<p align="center">
+  <img src="screenshots/Main Interface.png" alt="Main Interface" width="800"><br>
+  <i>Main Interface - 主界面</i>
+</p>
+
+<p align="center">
+  <img src="screenshots/Editing.png" alt="Editing Mode" width="800"><br>
+  <i>Editing Mode - 编辑模式</i>
+</p>
+
+<p align="center">
+  <img src="screenshots/Shortcut Editor (Add).png" alt="Add Shortcut" width="800"><br>
+  <i>Add Shortcut - 添加快捷方式</i>
+</p>
+
+<p align="center">
+  <img src="screenshots/ICON Editor.png" alt="Icon Editor" width="800"><br>
+  <i>Icon Editor - 图标编辑器</i>
+</p>
+
+<p align="center">
+  <img src="screenshots/Wallpaper Editor.png" alt="Wallpaper Editor" width="800"><br>
+  <i>Wallpaper Editor - 壁纸编辑器</i>
+</p>
+
+<p align="center">
+  <img src="screenshots/Cities Editor.png" alt="Cities Editor" width="800"><br>
+  <i>Cities Editor - 城市管理</i>
+</p>
+
+<p align="center">
+  <img src="screenshots/Date Format.png" alt="Date Format Settings" width="800"><br>
+  <i>Date Format Settings - 日期格式设置</i>
+</p>
+
 ## ✨ Key Features
 
 ### 🖼️ Custom Backgrounds
