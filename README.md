@@ -22,6 +22,11 @@
 ## 📸 Screenshots
 
 <p align="center">
+  <img src="screenshots/github/main_showcase.jpg" alt="Main Showcase" width="800"><br>
+  <i>Showcase - 展示效果</i>
+</p>
+
+<p align="center">
   <img src="screenshots/Main Interface.png" alt="Main Interface" width="800"><br>
   <i>Main Interface - 主界面</i>
 </p>
