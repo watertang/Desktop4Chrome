@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Ada&Ava Desktop for Chrome",
-  "version": "1.1",
+  "version": "1.3",
   "description": "自定义新标签页，显示背景图片、时间日期和网址快捷方式，支持自由拖拽排列和编辑",
   "icons": {
     "16": "icons/icon16.png",
@@ -26,5 +26,14 @@
   "background": {
     "service_worker": "js/background.js",
     "type": "module"
-  }
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'; img-src * data: https: http:; connect-src *"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["icons/*", "images/*"],
+      "matches": ["<all_urls>"]
+    }
+  ]
 } 

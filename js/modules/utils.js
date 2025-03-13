@@ -107,70 +107,19 @@ export function convertImageToBase64(url, callback, makeTransparent = false) {
       return;
     }
     
+    // 设置超时处理
+    let timeoutId = setTimeout(() => {
+      console.warn('图片加载超时:', url);
+      callback(null);
+    }, 10000); // 10秒超时
+    
     // 创建一个新的图片对象
     const img = new Image();
     img.crossOrigin = 'Anonymous';
     
     img.onload = function() {
-      // 创建canvas
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      
-      // 设置canvas大小
-      canvas.width = img.width;
-      canvas.height = img.height;
-      
-      // 如果需要透明背景
-      if (makeTransparent) {
-        // 绘制图像
-        ctx.drawImage(img, 0, 0);
-        
-        // 获取图像数据
-        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        const data = imageData.data;
-        
-        // 将白色背景转换为透明
-        for (let i = 0; i < data.length; i += 4) {
-          // 如果是白色或接近白色
-          if (data[i] > 240 && data[i + 1] > 240 && data[i + 2] > 240) {
-            // 设置透明度为0
-            data[i + 3] = 0;
-          }
-        }
-        
-        // 将修改后的图像数据放回canvas
-        ctx.putImageData(imageData, 0, 0);
-      } else {
-        // 直接绘制图像
-        ctx.drawImage(img, 0, 0);
-      }
-      
-      // 将canvas转换为Base64
-      const base64 = canvas.toDataURL('image/png');
-      callback(base64);
-    };
-    
-    img.onerror = function() {
-      console.error('图片加载失败:', url);
-      callback(null);
-    };
-    
-    // 设置图片源
-    img.src = url;
-  } else {
-    // 如果没有提供回调函数，返回Promise
-    return new Promise((resolve, reject) => {
-      // 如果URL已经是Base64格式，直接返回
-      if (url && url.startsWith('data:image')) {
-        resolve(url);
-        return;
-      }
-      
-      // 创建一个新的图片对象
-      const img = new Image();
-      img.crossOrigin = 'Anonymous';
-      
-      img.onload = function() {
+      clearTimeout(timeoutId);
+      try {
         // 创建canvas
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
@@ -206,16 +155,101 @@ export function convertImageToBase64(url, callback, makeTransparent = false) {
         
         // 将canvas转换为Base64
         const base64 = canvas.toDataURL('image/png');
-        resolve(base64);
-      };
+        callback(base64);
+      } catch (error) {
+        console.error('转换图像失败:', error);
+        callback(null);
+      }
+    };
+    
+    img.onerror = function(error) {
+      clearTimeout(timeoutId);
+      console.error('加载图像失败:', url, error);
       
-      img.onerror = function() {
-        console.error('图片加载失败:', url);
-        reject(new Error('图片加载失败: ' + url));
-      };
-      
-      // 设置图片源
+      // 如果是favicon请求，尝试使用Google的favicon服务
+      if (url.includes('favicon.ico')) {
+        try {
+          // 提取域名
+          let domain = url;
+          if (url.startsWith('http')) {
+            try {
+              const urlObj = new URL(url);
+              domain = urlObj.hostname;
+            } catch (e) {
+              // 尝试从URL字符串中提取域名
+              const match = url.match(/https?:\/\/([^\/]+)/);
+              if (match && match[1]) {
+                domain = match[1];
+              }
+            }
+          }
+          
+          // 使用Google的favicon服务
+          const googleFaviconUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=64`;
+          console.log('尝试使用Google的favicon服务:', googleFaviconUrl);
+          
+          // 重新加载图像
+          const googleImg = new Image();
+          googleImg.crossOrigin = 'Anonymous';
+          
+          // 设置新的超时
+          const newTimeoutId = setTimeout(() => {
+            console.warn('Google图标加载超时');
+            callback(null);
+          }, 5000);
+          
+          googleImg.onload = function() {
+            clearTimeout(newTimeoutId);
+            try {
+              const canvas = document.createElement('canvas');
+              canvas.width = googleImg.width;
+              canvas.height = googleImg.height;
+              
+              const ctx = canvas.getContext('2d');
+              ctx.drawImage(googleImg, 0, 0);
+              
+              const base64 = canvas.toDataURL('image/png');
+              callback(base64);
+            } catch (error) {
+              console.error('转换Google图像失败:', error);
+              callback(null);
+            }
+          };
+          
+          googleImg.onerror = function() {
+            clearTimeout(newTimeoutId);
+            console.error('加载Google图标失败');
+            callback(null);
+          };
+          
+          googleImg.src = googleFaviconUrl;
+        } catch (e) {
+          console.error('处理备选图标失败:', e);
+          callback(null);
+        }
+      } else {
+        callback(null);
+      }
+    };
+    
+    // 设置图片源
+    try {
       img.src = url;
+    } catch (error) {
+      clearTimeout(timeoutId);
+      console.error('设置图片源失败:', error);
+      callback(null);
+    }
+  } else {
+    // 如果没有提供回调函数，返回Promise
+    return new Promise((resolve, reject) => {
+      convertImageToBase64(url, (base64) => {
+        if (base64) {
+          resolve(base64);
+        } else {
+          reject(new Error('转换图像失败'));
+        }
+      }, makeTransparent);
     });
   }
 }
@@ -286,4 +320,79 @@ export function deepClone(obj) {
   }
   
   return obj;
+}
+
+// 压缩和调整图片大小
+export async function processBackgroundImage(imageFile, maxSizeMB = 5) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = async function(e) {
+      const img = new Image();
+      img.onload = function() {
+        // 获取屏幕尺寸
+        const screenWidth = window.screen.width;
+        const screenHeight = window.screen.height;
+        
+        // 计算缩放比例
+        const scaleX = screenWidth / img.width;
+        const scaleY = screenHeight / img.height;
+        const scale = Math.max(scaleX, scaleY); // 使用较大的缩放比例以确保覆盖
+        
+        // 计算新的尺寸
+        const newWidth = Math.round(img.width * scale);
+        const newHeight = Math.round(img.height * scale);
+        
+        // 创建canvas
+        const canvas = document.createElement('canvas');
+        canvas.width = newWidth;
+        canvas.height = newHeight;
+        const ctx = canvas.getContext('2d');
+        
+        // 绘制调整大小后的图片
+        ctx.drawImage(img, 0, 0, newWidth, newHeight);
+        
+        // 逐步降低质量直到文件大小合适
+        let quality = 0.85;
+        const minQuality = 0.5; // 最低质量限制
+        
+        const tryCompress = () => {
+          // 转换为base64
+          const base64 = canvas.toDataURL('image/jpeg', quality);
+          
+          // 计算大致文件大小（base64字符串长度 * 0.75）
+          const fileSizeMB = (base64.length * 0.75) / (1024 * 1024);
+          
+          if (fileSizeMB <= maxSizeMB || quality <= minQuality) {
+            // 达到目标大小或已达到最低质量
+            console.log(`图片处理完成 - 质量: ${Math.round(quality * 100)}%, 大小: ${fileSizeMB.toFixed(2)}MB`);
+            resolve({
+              base64,
+              width: newWidth,
+              height: newHeight,
+              quality: Math.round(quality * 100),
+              size: fileSizeMB
+            });
+          } else {
+            // 继续降低质量
+            quality -= 0.05;
+            setTimeout(tryCompress, 0); // 使用setTimeout避免阻塞
+          }
+        };
+        
+        tryCompress();
+      };
+      
+      img.onerror = function() {
+        reject(new Error('图片加载失败'));
+      };
+      
+      img.src = e.target.result;
+    };
+    
+    reader.onerror = function() {
+      reject(new Error('文件读取失败'));
+    };
+    
+    reader.readAsDataURL(imageFile);
+  });
 } 

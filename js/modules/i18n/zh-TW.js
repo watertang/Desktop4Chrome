@@ -177,5 +177,8 @@ export default {
   "form_submit_error": "提交表單時出錯，請重試",
   "icon_hint": "雙擊圖標可編輯",
   "url_required": "請填寫此欄位",
-  "url_empty_or_fill": "輸入網址，或者留空"
+  "url_empty_or_fill": "輸入網址，或者留空",
+  
+  // 背景圖片編輯器
+  "apply": "應用"
 }; 

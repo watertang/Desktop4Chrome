@@ -5,6 +5,7 @@
 
 import { showNotification } from './utils.js';
 import { getStoredData, saveToStorage, DEFAULT_BACKGROUND } from './storage.js';
+import { initBackgroundEditor } from './backgroundEditor.js';
 
 // 设置背景图片
 export function setBackground(url) {
@@ -349,17 +350,41 @@ function openFileSelector() {
   input.type = 'file';
   input.accept = 'image/*';
   
-  input.onchange = function(e) {
+  input.onchange = async function(e) {
     const file = e.target.files[0];
     
     if (file) {
-      // 检查文件大小，如果超过5MB，直接告知用户无法使用
-      if (file.size > 5 * 1024 * 1024) {
-        showNotification('图片过大（超过5MB），无法使用。请选择较小的图片。');
-        console.log('用户尝试使用过大的图片，已拒绝');
-      } else {
-        // 图片大小合适，直接处理
-        processBackgroundImage(file);
+      // 显示加载指示器
+      const loader = showLoader();
+      
+      try {
+        // 确保背景编辑器已初始化
+        await import('./backgroundEditor.js').then(async module => {
+          // 先初始化编辑器
+          module.initBackgroundEditor();
+          
+          // 延迟一小段时间确保DOM已更新
+          await new Promise(resolve => setTimeout(resolve, 100));
+          
+          hideLoader(loader);
+          module.openEditor(file, async (result) => {
+            if (result && result.base64) {
+              // 设置背景图片
+              setBackground(result.base64);
+              showNotification(`背景图片已优化 - 质量: ${result.quality}%, 大小: ${result.size.toFixed(2)}MB`);
+            } else {
+              showNotification('处理图片失败，请重试。');
+            }
+          });
+        }).catch(error => {
+          hideLoader(loader);
+          console.error('加载背景图片编辑器失败:', error);
+          showNotification('加载图片编辑器失败，请重试。');
+        });
+      } catch (error) {
+        hideLoader(loader);
+        console.error('处理背景图片失败:', error);
+        showNotification('处理图片失败，请重试。');
       }
     }
   };

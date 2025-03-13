@@ -218,6 +218,28 @@
     </div>
   </div>
   
+  <!-- 背景图片编辑器模态框 -->
+  <div class="background-editor-modal" id="background-editor-modal" style="display: none;">
+    <div class="background-editor-content">
+      <!-- 编辑区域 -->
+      <div class="background-editor-workspace">
+        <!-- Canvas容器 -->
+        <div class="background-canvas-container">
+          <canvas id="background-canvas"></canvas>
+          <div class="selection-box" style="display: none;">
+            <div class="selection-handle"></div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 底部按钮 -->
+      <div class="editor-buttons">
+        <button type="button" id="background-editor-cancel-btn" data-i18n="cancel">取消</button>
+        <button type="button" id="background-editor-apply-btn" data-i18n="apply">应用</button>
+      </div>
+    </div>
+  </div>
+  
   <script type="module" src="js/newtab.js"></script>
 </body>
 </html> 

@@ -400,6 +400,9 @@ function setupEditModeListeners() {
     
     // 注意：Esc键处理由core.js统一处理
   });
+  
+  // 设置URL输入事件
+  setupUrlInputEvents();
 }
 
 // 切换编辑模式
@@ -603,7 +606,7 @@ export function renderShortcuts() {
             // 尝试方法1：使用Chrome的favicon缓存
             console.log(`尝试方法1：从Chrome缓存获取 ${domain} 的favicon`);
             imgElement.dataset.attempt = '1';
-            imgElement.src = `chrome://favicon/size/64@1x/${urlWithProtocol}`;
+            imgElement.src = `https://www.google.com/s2/favicons?domain=${domain}&sz=64`;
             
             iconElement.appendChild(imgElement);
             return true;
@@ -1404,329 +1407,6 @@ function readFileAsBase64(file) {
   });
 }
 
-// 处理图标URL输入
-async function handleIconUrlInput(url) {
-  try {
-    // 验证URL
-    let finalUrl = url.trim();
-    
-    const isValidUrl = (url) => {
-      try {
-        new URL(url);
-        return true;
-      } catch (e) {
-        return false;
-      }
-    };
-    
-    // 如果URL不包含协议，添加https://
-    if (finalUrl && !finalUrl.startsWith('http://') && !finalUrl.startsWith('https://')) {
-      finalUrl = `https://${finalUrl}`;
-    }
-    
-    if (!isValidUrl(finalUrl)) {
-      showNotification(t('invalid_url'), 'error');
-      return;
-    }
-    
-    // 显示加载中通知
-    showNotification(t('loading_icon'));
-    
-    // 尝试加载图片
-    try {
-      const base64Data = await loadImageAsBase64(finalUrl);
-      
-      // 打开图片编辑器
-      openEditor(function(processedImageData) {
-        console.log('图片处理完成，更新图标预览');
-        // 更新图标预览
-        updateIconPreview(processedImageData);
-        
-        // 更新隐藏输入框的值
-        if (shortcutIconInput) {
-          shortcutIconInput.value = processedImageData;
-        } else {
-          console.error('找不到shortcutIconInput元素');
-        }
-      }, base64Data);
-    } catch (error) {
-      console.error('加载图片失败，尝试获取网站图标:', error);
-      
-      // 如果加载图片失败，尝试获取网站图标
-      const iconUrl = await getDefaultIconFromUrl(finalUrl);
-      if (iconUrl) {
-        // 打开图片编辑器
-        openEditor(function(processedImageData) {
-          console.log('图片处理完成，更新图标预览');
-          // 更新图标预览
-          updateIconPreview(processedImageData);
-          
-          // 更新隐藏输入框的值
-          if (shortcutIconInput) {
-            shortcutIconInput.value = processedImageData;
-          } else {
-            console.error('找不到shortcutIconInput元素');
-          }
-        }, iconUrl);
-      } else {
-        showNotification(t('icon_load_failed'), 'error');
-      }
-    }
-  } catch (error) {
-    console.error('处理图标URL输入失败:', error);
-    showNotification(t('icon_load_failed'), 'error');
-  }
-}
-
-/**
- * 从URL加载图像为Base64
- * @param {string} url - 图像URL
- * @returns {Promise<string>} - 返回Base64编码的图像
- */
-function loadImageAsBase64(url) {
-  return new Promise((resolve, reject) => {
-    // 检查是否是跨域URL
-    const isCrossDomain = url.indexOf('http') === 0 && !url.includes(location.host);
-    
-    const img = new Image();
-    img.crossOrigin = 'Anonymous';
-    
-    img.onload = () => {
-      try {
-        const canvas = document.createElement('canvas');
-        canvas.width = img.width;
-        canvas.height = img.height;
-        
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0);
-        
-        const dataURL = canvas.toDataURL('image/png');
-        resolve(dataURL);
-      } catch (error) {
-        console.error('转换图像失败:', error);
-        reject(error);
-      }
-    };
-    
-    img.onerror = () => {
-      // 如果直接加载失败，尝试使用代理服务
-      if (isCrossDomain) {
-        tryLoadWithProxy(url, resolve, reject);
-      } else {
-        reject(new Error('加载图像失败'));
-      }
-    };
-    
-    img.src = url;
-  });
-}
-
-/**
- * 尝试使用代理服务加载跨域图片
- * @param {string} url - 原始图片URL
- * @param {Function} resolve - Promise解析函数
- * @param {Function} reject - Promise拒绝函数
- */
-function tryLoadWithProxy(url, resolve, reject) {
-  // 方法1: 使用CORS代理
-  const corsProxyUrl = `https://cors-anywhere.herokuapp.com/${url}`;
-  
-  const img = new Image();
-  img.crossOrigin = 'Anonymous';
-  
-  img.onload = () => {
-    try {
-      const canvas = document.createElement('canvas');
-      canvas.width = img.width;
-      canvas.height = img.height;
-      
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0);
-      
-      const dataURL = canvas.toDataURL('image/png');
-      resolve(dataURL);
-    } catch (error) {
-      console.error('转换图像失败:', error);
-      reject(error);
-    }
-  };
-  
-  img.onerror = () => {
-    // 方法2: 尝试使用后台脚本获取
-    chrome.runtime.sendMessage(
-      { 
-        action: 'fetchImage', 
-        url: url 
-      },
-      function(response) {
-        if (response && response.success && response.dataUrl) {
-          resolve(response.dataUrl);
-        } else {
-          reject(new Error('加载图像失败'));
-        }
-      }
-    );
-  };
-  
-  img.src = corsProxyUrl;
-}
-
-/**
- * 更新图标预览
- * @param {string} iconData - 图标数据（Base64或URL）
- */
-function updateIconPreview(iconData) {
-  console.log('更新图标预览:', iconData ? '有图标数据' : '无图标数据');
-  
-  // 获取图标预览元素
-  const iconPreviewElement = document.getElementById('icon-preview');
-  if (!iconPreviewElement) {
-    console.error('找不到icon-preview元素');
-    return;
-  }
-  
-  // 移除旧的事件监听器
-  const newIconPreview = iconPreviewElement.cloneNode(false); // 只克隆节点本身，不克隆子节点
-  if (iconPreviewElement.parentNode) {
-    iconPreviewElement.parentNode.replaceChild(newIconPreview, iconPreviewElement);
-  }
-  
-  // 添加title属性
-  newIconPreview.setAttribute('title', t('icon_hint'));
-  
-  // 添加双击事件监听器
-  newIconPreview.addEventListener('dblclick', () => {
-    console.log('图标预览双击，打开图片编辑器');
-    try {
-      // 获取当前图标URL
-      let currentIconUrl = '';
-      
-      // 检查图标预览中是否有图像
-      const previewImg = newIconPreview.querySelector('img');
-      if (previewImg && previewImg.src) {
-        currentIconUrl = previewImg.src;
-        console.log('从预览图像获取图标URL:', currentIconUrl);
-      } else if (shortcutIconInput && shortcutIconInput.value) {
-        currentIconUrl = shortcutIconInput.value;
-        console.log('从输入框获取图标URL:', currentIconUrl);
-      }
-      
-      console.log('打开图片编辑器，传递图标URL:', currentIconUrl);
-      
-      // 直接使用回调函数处理编辑后的图像
-      openEditor(function(processedImageData) {
-        console.log('图片处理完成，更新图标预览');
-        // 更新图标预览
-        updateIconPreview(processedImageData);
-        
-        // 更新隐藏输入框的值
-        if (shortcutIconInput) {
-          shortcutIconInput.value = processedImageData;
-        } else {
-          console.error('找不到shortcutIconInput元素');
-        }
-      }, currentIconUrl);
-    } catch (error) {
-      console.error('打开图片编辑器失败:', error);
-      showNotification(t('editor_open_failed'), 'error');
-    }
-  });
-  
-  if (iconData) {
-    // 创建图片元素
-    const img = document.createElement('img');
-    img.src = iconData;
-    img.alt = 'Icon';
-    img.style.maxWidth = '100%';
-    img.style.maxHeight = '100%';
-    
-    // 添加加载事件
-    img.onload = () => {
-      console.log('图标加载成功');
-    };
-    
-    img.onerror = () => {
-      console.error('图标加载失败');
-      // 显示默认图标
-      showDefaultIcon(newIconPreview);
-    };
-    
-    // 添加到预览区域
-    newIconPreview.appendChild(img);
-  } else {
-    // 显示默认图标
-    showDefaultIcon(newIconPreview);
-  }
-  
-  // 更新全局变量
-  iconPreview = newIconPreview;
-}
-
-// 重置图标为默认
-function resetIconToDefault() {
-  try {
-    // 获取第一个URL输入框的值
-    const firstUrlInput = document.querySelector('.shortcut-url');
-    if (firstUrlInput && firstUrlInput.value) {
-      const url = firstUrlInput.value.trim();
-      if (url) {
-        // 显示加载中通知
-        showNotification(t('loading_icon'));
-        
-        // 尝试从URL获取默认图标
-        getDefaultIconFromUrl(url)
-          .then(iconUrl => {
-            if (iconUrl) {
-              // 更新图标预览
-              updateIconPreview(iconUrl);
-              
-              // 更新隐藏输入框的值
-              if (shortcutIconInput) {
-                shortcutIconInput.value = iconUrl;
-              }
-              
-              // 显示通知
-              showNotification(t('icon_loaded_successfully'));
-            } else {
-              // 如果无法获取默认图标，清空图标
-              clearIcon();
-              showNotification(t('icon_load_failed'), 'warning');
-            }
-          })
-          .catch(error => {
-            console.error('获取默认图标失败:', error);
-            // 如果获取失败，清空图标
-            clearIcon();
-            showNotification(t('icon_load_failed'), 'error');
-          });
-      } else {
-        // 如果URL为空，清空图标
-        clearIcon();
-      }
-    } else {
-      // 如果没有URL输入框，清空图标
-      clearIcon();
-    }
-  } catch (error) {
-    console.error('重置图标失败:', error);
-    clearIcon();
-  }
-  
-  // 辅助函数：清空图标
-  function clearIcon() {
-    // 清空图标输入框的值
-    if (shortcutIconInput) {
-      shortcutIconInput.value = '';
-    }
-    
-    // 更新图标预览
-    updateIconPreview('');
-    
-    // 显示通知
-    showNotification(t('icon_reset_to_default'));
-  }
-}
-
 // 从URL中获取默认图标
 async function getDefaultIconFromUrl(url) {
   try {
@@ -1751,8 +1431,8 @@ async function getDefaultIconFromUrl(url) {
       urlWithProtocol = 'https://' + url;
     }
     
-    // 检查URL是否包含有效的域名部分
-    if (!urlWithProtocol.match(/^https?:\/\/[a-zA-Z0-9][-a-zA-Z0-9.]*\.[a-zA-Z]{2,}(\/.*)?$/)) {
+    // 检查URL是否包含有效的域名部分 - 使用更宽松的正则表达式
+    if (!urlWithProtocol.match(/^https?:\/\/[a-zA-Z0-9][-a-zA-Z0-9.]*(\.[a-zA-Z]{2,})?(\/.*)?$/)) {
       console.warn('URL格式不正确:', urlWithProtocol);
       return null;
     }
@@ -1775,57 +1455,31 @@ async function getDefaultIconFromUrl(url) {
       return null;
     }
     
-    // 尝试从Chrome历史记录/缓存中获取favicon
+    // 尝试直接从网站获取favicon.ico
     try {
-      // 使用chrome.history API查询用户是否访问过该网站
-      // 注意：这需要"history"权限
-      if (chrome.history) {
-        const historyItems = await new Promise(resolve => {
-          chrome.history.search({
-            text: domain,
-            maxResults: 1
-          }, resolve);
-        });
-        
-        if (historyItems && historyItems.length > 0) {
-          console.log('用户曾经访问过该网站:', domain);
-          // 可以尝试使用Chrome的favicon缓存
-          const cachedIconUrl = `chrome://favicon/size/64@1x/${urlWithProtocol}`;
-          try {
-            // 尝试加载缓存的favicon
-            const cachedIcon = await loadImageAsBase64(cachedIconUrl);
-            if (cachedIcon) {
-              console.log('成功从Chrome缓存获取favicon');
-              return cachedIcon;
-            }
-          } catch (cacheError) {
-            console.warn('从Chrome缓存获取favicon失败:', cacheError);
-            // 继续尝试其他方法
-          }
-        }
+      const faviconUrl = `https://${domain}/favicon.ico`;
+      console.log('尝试直接访问favicon.ico:', faviconUrl);
+      const iconData = await loadImageAsBase64(faviconUrl);
+      if (iconData) {
+        console.log('成功从网站获取favicon.ico');
+        return iconData;
       }
-    } catch (historyError) {
-      console.warn('访问Chrome历史记录失败:', historyError);
+    } catch (error) {
+      console.warn('直接访问favicon.ico失败:', error);
       // 继续尝试其他方法
     }
     
-    // 如果无法从缓存获取，尝试从网站直接获取favicon
+    // 使用Google的favicon服务
     try {
-      // 尝试从网站获取favicon
-      const faviconUrl = await fetchFavicon(domain);
-      if (faviconUrl) {
-        console.log('从网站获取到favicon:', faviconUrl);
-        return await loadImageAsBase64(faviconUrl);
-      }
-    } catch (fetchError) {
-      console.warn('从网站获取favicon失败:', fetchError);
-      // 继续尝试其他方法
+      console.log('使用Google的favicon服务获取图标');
+      const googleFaviconUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=64`;
+      return await loadImageAsBase64(googleFaviconUrl);
+    } catch (error) {
+      console.warn('从Google获取favicon失败:', error);
     }
     
-    // 最后尝试使用Google的favicon服务
-    console.log('使用Google的favicon服务获取图标');
-    const iconUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=64`;
-    return await loadImageAsBase64(iconUrl);
+    // 如果所有方法都失败，返回null
+    return null;
   } catch (error) {
     console.error('获取网站图标失败:', error);
     return null;
@@ -1936,6 +1590,69 @@ function showDefaultIcon(container) {
   container.appendChild(placeholder);
 }
 
+// 添加一个防抖函数，用于延迟执行图标加载
+function debounce(func, wait) {
+  let timeout;
+  return function(...args) {
+    const context = this;
+    clearTimeout(timeout);
+    timeout = setTimeout(() => func.apply(context, args), wait);
+  };
+}
+
+// 修改URL输入事件处理
+function setupUrlInputEvents() {
+  // 获取所有URL输入框
+  const urlInputs = document.querySelectorAll('.shortcut-url');
+  
+  urlInputs.forEach(input => {
+    // 移除之前的事件监听器
+    input.removeEventListener('input', handleUrlInput);
+    input.removeEventListener('blur', handleUrlBlur);
+    input.removeEventListener('keydown', handleUrlKeydown);
+    
+    // 添加新的事件监听器
+    input.addEventListener('blur', handleUrlBlur);
+    input.addEventListener('keydown', handleUrlKeydown);
+  });
+}
+
+// 处理URL输入事件 - 添加这个函数的定义
+function handleUrlInput(event) {
+  // 这个函数实际上不需要做任何事情，因为我们不再在输入时实时验证
+  // 保留这个函数只是为了在移除事件监听器时不报错
+  console.log('URL输入中...');
+}
+
+// 处理URL输入框失去焦点事件
+const handleUrlBlur = debounce(async function(event) {
+  const input = event.target;
+  const url = input.value.trim();
+  
+  if (url && url.length > 3) {
+    // 尝试获取图标并更新预览
+    try {
+      const iconData = await tryLoadIconFromUrl(url);
+      if (iconData && !shortcutIconInput.value) {
+        // 只有在用户没有手动设置图标时才自动更新
+        updateIconPreview(iconData);
+        shortcutIconInput.value = iconData;
+      }
+    } catch (error) {
+      console.warn('自动获取图标失败:', error);
+    }
+  }
+}, 500);
+
+// 处理URL输入框按键事件
+function handleUrlKeydown(event) {
+  // 如果按下回车键，触发失去焦点事件
+  if (event.key === 'Enter') {
+    event.preventDefault();
+    event.target.blur();
+  }
+}
+
 // 实时预览：尝试获取网站图标
 async function tryLoadIconFromUrl(url) {
   try {
@@ -1960,13 +1677,7 @@ async function tryLoadIconFromUrl(url) {
       urlWithProtocol = 'https://' + url;
     }
     
-    // 检查URL是否包含有效的域名部分
-    if (!urlWithProtocol.match(/^https?:\/\/[a-zA-Z0-9][-a-zA-Z0-9.]*\.[a-zA-Z]{2,}(\/.*)?$/)) {
-      console.warn('URL格式不正确:', urlWithProtocol);
-      return null;
-    }
-    
-    // 尝试构造URL对象
+    // 使用更宽松的URL验证
     let urlObj;
     try {
       urlObj = new URL(urlWithProtocol);
@@ -1984,32 +1695,13 @@ async function tryLoadIconFromUrl(url) {
       return null;
     }
     
-    // 尝试从Chrome缓存获取favicon
-    try {
-      // 尝试使用Chrome的favicon缓存
-      const cachedIconUrl = `chrome://favicon/size/64@1x/${urlWithProtocol}`;
-      try {
-        // 尝试加载缓存的favicon
-        const cachedIcon = await loadImageAsBase64(cachedIconUrl);
-        if (cachedIcon) {
-          console.log('成功从Chrome缓存获取favicon');
-          return cachedIcon;
-        }
-      } catch (cacheError) {
-        console.warn('从Chrome缓存获取favicon失败:', cacheError);
-        // 继续尝试其他方法
-      }
-    } catch (error) {
-      console.warn('访问Chrome缓存失败:', error);
-      // 继续尝试其他方法
-    }
-    
-    // 尝试直接访问网站的favicon.ico
+    // 不再尝试使用chrome://favicon/，直接尝试从网站获取favicon.ico
     try {
       const faviconUrl = `https://${domain}/favicon.ico`;
       console.log('尝试直接访问favicon.ico:', faviconUrl);
       const iconData = await loadImageAsBase64(faviconUrl);
       if (iconData) {
+        console.log('成功从网站获取favicon.ico');
         return iconData;
       }
     } catch (error) {
@@ -2017,12 +1709,487 @@ async function tryLoadIconFromUrl(url) {
       // 继续尝试其他方法
     }
     
-    // 最后尝试使用Google的favicon服务
-    console.log('使用Google的favicon服务获取图标');
-    const iconUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=64`;
-    return await loadImageAsBase64(iconUrl);
+    // 使用Google的favicon服务
+    try {
+      console.log('使用Google的favicon服务获取图标');
+      const googleFaviconUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=64`;
+      return await loadImageAsBase64(googleFaviconUrl);
+    } catch (error) {
+      console.warn('从Google获取favicon失败:', error);
+    }
+    
+    // 如果所有方法都失败，返回null
+    return null;
   } catch (error) {
     console.error('获取网站图标失败:', error);
     return null;
   }
-} 
+}
+
+// 处理图标URL输入
+async function handleIconUrlInput(url) {
+  try {
+    // 验证URL
+    let finalUrl = url.trim();
+    
+    const isValidUrl = (url) => {
+      // 使用更宽松的URL验证
+      if (!url || url.length < 4) { // 至少需要类似 a.io 这样的最短域名
+        return false;
+      }
+      
+      // 如果不包含协议，添加https://
+      let urlToCheck = url;
+      if (!url.startsWith('http://') && !url.startsWith('https://')) {
+        urlToCheck = `https://${url}`;
+      }
+      
+      try {
+        new URL(urlToCheck);
+        return true;
+      } catch (e) {
+        return false;
+      }
+    };
+    
+    // 如果URL不包含协议，添加https://
+    if (finalUrl && !finalUrl.startsWith('http://') && !finalUrl.startsWith('https://')) {
+      finalUrl = `https://${finalUrl}`;
+    }
+    
+    if (!isValidUrl(finalUrl)) {
+      showNotification(t('invalid_url'), 'error');
+      return;
+    }
+    
+    // 显示加载中通知
+    showNotification(t('loading_icon'));
+    
+    // 尝试加载图片
+    try {
+      // 不再尝试从Chrome缓存获取favicon，直接尝试加载URL
+      let iconData = null;
+      
+      try {
+        // 尝试直接加载URL
+        iconData = await loadImageAsBase64(finalUrl);
+      } catch (directError) {
+        console.warn('直接加载图片失败:', directError);
+      }
+      
+      // 如果直接加载失败，尝试获取网站默认图标
+      if (!iconData) {
+        iconData = await getDefaultIconFromUrl(finalUrl);
+      }
+      
+      if (!iconData) {
+        showNotification(t('icon_load_failed'), 'error');
+        return;
+      }
+      
+      // 打开图片编辑器
+      openEditor(function(processedImageData) {
+        console.log('图片处理完成，更新图标预览');
+        // 更新图标预览
+        updateIconPreview(processedImageData);
+        
+        // 更新隐藏输入框的值
+        if (shortcutIconInput) {
+          shortcutIconInput.value = processedImageData;
+        } else {
+          console.error('找不到shortcutIconInput元素');
+        }
+      }, iconData);
+    } catch (error) {
+      console.error('加载图标失败:', error);
+      showNotification(t('icon_load_failed'), 'error');
+    }
+  } catch (error) {
+    console.error('处理图标URL输入失败:', error);
+    showNotification(t('icon_load_failed'), 'error');
+  }
+}
+
+/**
+ * 更新图标预览
+ * @param {string} iconData - 图标数据（Base64或URL）
+ */
+function updateIconPreview(iconData) {
+  console.log('更新图标预览:', iconData ? '有图标数据' : '无图标数据');
+  
+  // 获取图标预览元素
+  const iconPreviewElement = document.getElementById('icon-preview');
+  if (!iconPreviewElement) {
+    console.error('找不到icon-preview元素');
+    return;
+  }
+  
+  // 清空预览区域
+  while (iconPreviewElement.firstChild) {
+    iconPreviewElement.removeChild(iconPreviewElement.firstChild);
+  }
+  
+  // 添加title属性
+  iconPreviewElement.setAttribute('title', t('icon_hint'));
+  
+  // 添加双击事件监听器
+  iconPreviewElement.addEventListener('dblclick', () => {
+    console.log('图标预览双击，打开图片编辑器');
+    try {
+      // 获取当前图标URL
+      let currentIconUrl = '';
+      
+      // 检查图标预览中是否有图像
+      const previewImg = iconPreviewElement.querySelector('img');
+      if (previewImg && previewImg.src) {
+        currentIconUrl = previewImg.src;
+        console.log('从预览图像获取图标URL:', currentIconUrl);
+      } else if (shortcutIconInput && shortcutIconInput.value) {
+        currentIconUrl = shortcutIconInput.value;
+        console.log('从输入框获取图标URL:', currentIconUrl);
+      }
+      
+      // 确保URL是有效的
+      if (!currentIconUrl || (!currentIconUrl.startsWith('data:') && !currentIconUrl.startsWith('http'))) {
+        console.log('图标URL无效或为空，不传递到编辑器');
+        currentIconUrl = '';
+      }
+      
+      console.log('打开图片编辑器，传递图标URL:', currentIconUrl);
+      
+      // 直接使用回调函数处理编辑后的图像
+      openEditor(function(processedImageData) {
+        console.log('图片处理完成，更新图标预览');
+        // 更新图标预览
+        updateIconPreview(processedImageData);
+        
+        // 更新隐藏输入框的值
+        if (shortcutIconInput) {
+          shortcutIconInput.value = processedImageData;
+        } else {
+          console.error('找不到shortcutIconInput元素');
+        }
+      }, currentIconUrl);
+    } catch (error) {
+      console.error('打开图片编辑器失败:', error);
+      showNotification(t('editor_open_failed'), 'error');
+    }
+  });
+  
+  if (iconData) {
+    // 创建图片元素
+    const img = document.createElement('img');
+    img.src = iconData;
+    img.alt = 'Icon';
+    img.style.maxWidth = '100%';
+    img.style.maxHeight = '100%';
+    
+    // 添加加载事件
+    img.onload = () => {
+      console.log('图标加载成功');
+    };
+    
+    img.onerror = () => {
+      console.error('图标加载失败:', iconData);
+      // 显示默认图标
+      showDefaultIcon(iconPreviewElement);
+    };
+    
+    // 添加到预览区域
+    iconPreviewElement.appendChild(img);
+  } else {
+    // 显示默认图标
+    showDefaultIcon(iconPreviewElement);
+  }
+}
+
+/**
+ * 从URL加载图像为Base64
+ * @param {string} url - 图像URL
+ * @returns {Promise<string>} - 返回Base64编码的图像
+ */
+function loadImageAsBase64(url) {
+  return new Promise((resolve, reject) => {
+    // 检查URL是否为空或无效
+    if (!url) {
+      console.warn('URL为空，无法加载图像');
+      reject(new Error('URL为空'));
+      return;
+    }
+    
+    // 特殊处理cleanpng.com的URL
+    if (url.includes('cleanpng.com')) {
+      console.log('检测到cleanpng.com的URL，尝试提取域名');
+      try {
+        // 尝试从URL中提取域名
+        const match = url.match(/domain=([^&]+)/);
+        if (match && match[1]) {
+          const domain = match[1];
+          console.log('从cleanpng.com的URL提取域名:', domain);
+          // 使用Google的favicon服务
+          const googleFaviconUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=64`;
+          
+          const googleImg = new Image();
+          googleImg.crossOrigin = 'Anonymous';
+          
+          // 设置超时
+          const timeoutId = setTimeout(() => {
+            console.warn('Google图标加载超时:', domain);
+            reject(new Error('加载图像超时'));
+          }, 5000);
+          
+          googleImg.onload = () => {
+            clearTimeout(timeoutId);
+            try {
+              const canvas = document.createElement('canvas');
+              canvas.width = googleImg.width || 64;
+              canvas.height = googleImg.height || 64;
+              
+              const ctx = canvas.getContext('2d');
+              ctx.drawImage(googleImg, 0, 0, canvas.width, canvas.height);
+              
+              const dataURL = canvas.toDataURL('image/png');
+              resolve(dataURL);
+            } catch (error) {
+              console.error('转换Google图像失败:', error);
+              reject(error);
+            }
+          };
+          
+          googleImg.onerror = () => {
+            clearTimeout(timeoutId);
+            console.warn('Google图标加载失败:', domain);
+            // 使用默认图标
+            createDefaultIcon(resolve);
+          };
+          
+          googleImg.src = googleFaviconUrl;
+          return;
+        }
+      } catch (e) {
+        console.error('处理cleanpng.com的URL失败:', e);
+      }
+    }
+    
+    // 检查是否是跨域URL
+    const isCrossDomain = url.indexOf('http') === 0 && !url.includes(location.host);
+    
+    // 设置超时
+    const timeoutId = setTimeout(() => {
+      console.warn('图片加载超时:', url);
+      reject(new Error('加载图像超时'));
+    }, 10000); // 10秒超时
+    
+    const img = new Image();
+    img.crossOrigin = 'Anonymous';
+    
+    img.onload = () => {
+      clearTimeout(timeoutId);
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width || 64; // 如果宽度为0，使用默认值
+        canvas.height = img.height || 64; // 如果高度为0，使用默认值
+        
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        
+        try {
+          const dataURL = canvas.toDataURL('image/png');
+          resolve(dataURL);
+        } catch (canvasError) {
+          console.error('Canvas转换为DataURL失败:', canvasError);
+          // 尝试使用备选方法
+          createDefaultIcon(resolve);
+        }
+      } catch (error) {
+        console.error('转换图像失败:', error);
+        // 尝试使用备选方法
+        createDefaultIcon(resolve);
+      }
+    };
+    
+    img.onerror = () => {
+      clearTimeout(timeoutId);
+      console.warn('图像加载失败:', url);
+      
+      // 如果是favicon请求，尝试使用Google的favicon服务
+      if (url.includes('/favicon.ico')) {
+        try {
+          // 尝试从URL中提取域名
+          let domain = '';
+          try {
+            const urlObj = new URL(url);
+            domain = urlObj.hostname;
+          } catch (e) {
+            // 尝试从URL字符串中提取域名
+            const match = url.match(/https?:\/\/([^\/]+)/);
+            if (match && match[1]) {
+              domain = match[1];
+            }
+          }
+          
+          if (domain) {
+            console.log('尝试使用Google的favicon服务:', domain);
+            const googleFaviconUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=64`;
+            
+            const googleImg = new Image();
+            googleImg.crossOrigin = 'Anonymous';
+            
+            // 设置新的超时
+            const newTimeoutId = setTimeout(() => {
+              console.warn('Google图标加载超时');
+              // 使用默认图标
+              createDefaultIcon(resolve);
+            }, 5000);
+            
+            googleImg.onload = () => {
+              clearTimeout(newTimeoutId);
+              try {
+                const canvas = document.createElement('canvas');
+                canvas.width = googleImg.width || 64;
+                canvas.height = googleImg.height || 64;
+                
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(googleImg, 0, 0, canvas.width, canvas.height);
+                
+                const dataURL = canvas.toDataURL('image/png');
+                resolve(dataURL);
+              } catch (error) {
+                console.error('转换Google图像失败:', error);
+                // 使用默认图标
+                createDefaultIcon(resolve);
+              }
+            };
+            
+            googleImg.onerror = () => {
+              clearTimeout(newTimeoutId);
+              console.error('加载Google图标失败');
+              // 使用默认图标
+              createDefaultIcon(resolve);
+            };
+            
+            googleImg.src = googleFaviconUrl;
+            return;
+          }
+        } catch (e) {
+          console.error('处理备选图标失败:', e);
+        }
+      }
+      
+      // 尝试使用Google的favicon服务
+      try {
+        // 尝试从URL中提取域名
+        let domain = '';
+        try {
+          const urlObj = new URL(url);
+          domain = urlObj.hostname;
+        } catch (e) {
+          // 尝试从URL字符串中提取域名
+          const match = url.match(/https?:\/\/([^\/]+)/);
+          if (match && match[1]) {
+            domain = match[1];
+          } else {
+            // 如果无法提取域名，使用URL作为域名
+            domain = url;
+          }
+        }
+        
+        if (domain) {
+          console.log('尝试使用Google的favicon服务:', domain);
+          const googleFaviconUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=64`;
+          
+          const googleImg = new Image();
+          googleImg.crossOrigin = 'Anonymous';
+          
+          // 设置新的超时
+          const newTimeoutId = setTimeout(() => {
+            console.warn('Google图标加载超时');
+            // 使用默认图标
+            createDefaultIcon(resolve);
+          }, 5000);
+          
+          googleImg.onload = () => {
+            clearTimeout(newTimeoutId);
+            try {
+              const canvas = document.createElement('canvas');
+              canvas.width = googleImg.width || 64;
+              canvas.height = googleImg.height || 64;
+              
+              const ctx = canvas.getContext('2d');
+              ctx.drawImage(googleImg, 0, 0, canvas.width, canvas.height);
+              
+              const dataURL = canvas.toDataURL('image/png');
+              resolve(dataURL);
+            } catch (error) {
+              console.error('转换Google图像失败:', error);
+              // 使用默认图标
+              createDefaultIcon(resolve);
+            }
+          };
+          
+          googleImg.onerror = () => {
+            clearTimeout(newTimeoutId);
+            console.error('加载Google图标失败');
+            // 使用默认图标
+            createDefaultIcon(resolve);
+          };
+          
+          googleImg.src = googleFaviconUrl;
+          return;
+        }
+      } catch (e) {
+        console.error('处理备选图标失败:', e);
+      }
+      
+      // 使用默认图标
+      createDefaultIcon(resolve);
+    };
+    
+    // 设置图片源
+    try {
+      img.src = url;
+    } catch (error) {
+      clearTimeout(timeoutId);
+      console.error('设置图片源失败:', error);
+      // 使用默认图标
+      createDefaultIcon(resolve);
+    }
+  });
+}
+
+/**
+ * 创建默认图标
+ * @param {Function} resolve - Promise解析函数
+ */
+function createDefaultIcon(resolve) {
+  try {
+    // 创建一个canvas元素
+    const canvas = document.createElement('canvas');
+    canvas.width = 64;
+    canvas.height = 64;
+    
+    // 获取2D上下文
+    const ctx = canvas.getContext('2d');
+    
+    // 绘制一个圆形背景
+    ctx.fillStyle = '#4285f4'; // Google蓝色
+    ctx.beginPath();
+    ctx.arc(32, 32, 32, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // 绘制一个链接图标
+    ctx.fillStyle = 'white';
+    ctx.font = 'bold 32px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('🔗', 32, 32);
+    
+    // 转换为Base64
+    const dataURL = canvas.toDataURL('image/png');
+    resolve(dataURL);
+  } catch (error) {
+    console.error('创建默认图标失败:', error);
+    // 如果创建默认图标失败，返回一个空白图标
+    resolve('data:image/png;base64,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');
+  }
+}
