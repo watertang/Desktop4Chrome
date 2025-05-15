@@ -5,7 +5,6 @@
 
 import { showNotification } from './utils.js';
 import { getStoredData, saveToStorage, DEFAULT_BACKGROUND } from './storage.js';
-import { initBackgroundEditor } from './backgroundEditor.js';
 
 // 设置背景图片
 export function setBackground(url) {
@@ -358,29 +357,17 @@ function openFileSelector() {
       const loader = showLoader();
       
       try {
-        // 确保背景编辑器已初始化
-        await import('./backgroundEditor.js').then(async module => {
-          // 先初始化编辑器
-          module.initBackgroundEditor();
-          
-          // 延迟一小段时间确保DOM已更新
-          await new Promise(resolve => setTimeout(resolve, 100));
-          
+        // 使用processBackgroundImage处理图片
+        const result = await processBackgroundImage(file);
+        if (result && result.base64) {
+          // 设置背景图片
+          setBackground(result.base64);
           hideLoader(loader);
-          module.openEditor(file, async (result) => {
-            if (result && result.base64) {
-              // 设置背景图片
-              setBackground(result.base64);
-              showNotification(`背景图片已优化 - 质量: ${result.quality}%, 大小: ${result.size.toFixed(2)}MB`);
-            } else {
-              showNotification('处理图片失败，请重试。');
-            }
-          });
-        }).catch(error => {
+          showNotification(`背景图片已优化 - 质量: ${result.quality}%, 大小: ${result.size.toFixed(2)}MB`);
+        } else {
           hideLoader(loader);
-          console.error('加载背景图片编辑器失败:', error);
-          showNotification('加载图片编辑器失败，请重试。');
-        });
+          showNotification('处理图片失败，请重试。');
+        }
       } catch (error) {
         hideLoader(loader);
         console.error('处理背景图片失败:', error);

@@ -1,10 +1,10 @@
-# Ada&Ava Desktop for Chrome Privacy Policy
+# A11 Tabs Privacy Policy
 
 Last Updated: March 10, 2024
 
 ## Introduction
 
-Ada&Ava Desktop for Chrome (hereinafter referred to as "this extension") is a Chrome new tab page customization extension. This privacy policy is intended to explain how this extension collects, uses, and protects user information.
+A11 Tabs (hereinafter referred to as "this extension") is a Chrome new tab page customization extension. This privacy policy is intended to explain how this extension collects, uses, and protects user information.
 
 ## Information Collection and Use
 
@@ -57,13 +57,13 @@ If you have any questions or suggestions regarding this privacy policy, please c
 
 ---
 
-# Ada&Ava Desktop for Chrome 隐私政策
+# A11 Tabs 隐私政策
 
 最后更新日期：2024年3月10日
 
 ## 引言
 
-Ada&Ava Desktop for Chrome（以下简称"本扩展"）是一款自定义Chrome新标签页的扩展程序。本隐私政策旨在说明本扩展如何收集、使用和保护用户信息。
+A11 Tabs（以下简称"本扩展"）是一款自定义Chrome新标签页的扩展程序。本隐私政策旨在说明本扩展如何收集、使用和保护用户信息。
 
 ## 信息收集与使用
 

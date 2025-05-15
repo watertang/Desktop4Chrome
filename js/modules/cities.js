@@ -752,57 +752,54 @@ export function renderCities() {
   // 将城市信息容器添加到城市显示区域
   citiesDisplay.appendChild(citiesInfoContainer);
   
-  // 只有当启用的城市数量大于2个时才显示指示点
-  if (enabledCities.length > 2) {
-    // 创建指示点容器
-    const dotsContainer = document.createElement('div');
-    dotsContainer.className = 'city-dots';
+  // 创建指示点容器
+  const dotsContainer = document.createElement('div');
+  dotsContainer.className = 'city-dots';
+  
+  // 为每个启用的城市创建一个指示点
+  enabledCities.forEach((city, idx) => {
+    const dot = document.createElement('div');
+    dot.className = 'city-dot';
+    dot.dataset.cityIndex = cities.findIndex(c => c.id === city.id);
     
-    // 为每个启用的城市创建一个指示点
-    enabledCities.forEach((city, idx) => {
-      const dot = document.createElement('div');
-      dot.className = 'city-dot';
-      dot.dataset.cityIndex = cities.findIndex(c => c.id === city.id);
+    // 如果是当前显示的城市，添加active类
+    if (displayedCityIndices.includes(parseInt(dot.dataset.cityIndex))) {
+      dot.classList.add('active');
+    }
+    
+    // 点击指示点切换城市
+    dot.addEventListener('click', () => {
+      const cityIndex = parseInt(dot.dataset.cityIndex);
       
-      // 如果是当前显示的城市，添加active类
-      if (displayedCityIndices.includes(parseInt(dot.dataset.cityIndex))) {
-        dot.classList.add('active');
+      // 如果已经显示，则移除
+      const existingIndex = displayedCityIndices.indexOf(cityIndex);
+      if (existingIndex !== -1) {
+        // 至少保留一个城市
+        if (displayedCityIndices.length > 1) {
+          displayedCityIndices.splice(existingIndex, 1);
+        }
+      } else {
+        // 如果已经显示两个城市，替换第二个
+        if (displayedCityIndices.length >= 2) {
+          displayedCityIndices[1] = cityIndex;
+        } else {
+          // 否则添加到显示列表
+          displayedCityIndices.push(cityIndex);
+        }
       }
       
-      // 点击指示点切换城市
-      dot.addEventListener('click', () => {
-        const cityIndex = parseInt(dot.dataset.cityIndex);
-        
-        // 如果已经显示，则移除
-        const existingIndex = displayedCityIndices.indexOf(cityIndex);
-        if (existingIndex !== -1) {
-          // 至少保留一个城市
-          if (displayedCityIndices.length > 1) {
-            displayedCityIndices.splice(existingIndex, 1);
-          }
-        } else {
-          // 如果已经显示两个城市，替换第二个
-          if (displayedCityIndices.length >= 2) {
-            displayedCityIndices[1] = cityIndex;
-          } else {
-            // 否则添加到显示列表
-            displayedCityIndices.push(cityIndex);
-          }
-        }
-        
-        // 保存显示的城市索引
-        saveToStorage({ displayedCityIndices });
-        
-        // 重新渲染城市信息
-        renderCities();
-      });
+      // 保存显示的城市索引
+      saveToStorage({ displayedCityIndices });
       
-      dotsContainer.appendChild(dot);
+      // 重新渲染城市信息
+      renderCities();
     });
     
-    // 将指示点容器添加到城市显示区域
-    citiesDisplay.appendChild(dotsContainer);
-  }
+    dotsContainer.appendChild(dot);
+  });
+  
+  // 将指示点容器添加到城市显示区域
+  citiesDisplay.appendChild(dotsContainer);
   
   // 立即更新日期时间
   updateDateTime();

@@ -1,7 +1,7 @@
-# Ada&Ava Desktop for Chrome
+# A11 Tabs
 
 <p align="center">
-  <img src="icons/icon128.png" alt="Ada&Ava Desktop Logo" width="128" height="128">
+  <img src="icons/icon128.png" alt="A11 Tabs Logo" width="128" height="128">
 </p>
 
 <p align="center">
@@ -17,48 +17,6 @@
   <a href="#privacy">Privacy</a> •
   <a href="#development">Development</a> •
   <a href="#中文说明">中文说明</a>
-</p>
-
-## 📸 Screenshots
-
-<p align="center">
-  <img src="screenshots/github/main_showcase.jpg" alt="Main Showcase" width="800"><br>
-  <i>Showcase - 展示效果</i>
-</p>
-
-<p align="center">
-  <img src="screenshots/Main Interface.png" alt="Main Interface" width="800"><br>
-  <i>Main Interface - 主界面</i>
-</p>
-
-<p align="center">
-  <img src="screenshots/Editing.png" alt="Editing Mode" width="800"><br>
-  <i>Editing Mode - 编辑模式</i>
-</p>
-
-<p align="center">
-  <img src="screenshots/Shortcut Editor (Add).png" alt="Add Shortcut" width="800"><br>
-  <i>Add Shortcut - 添加快捷方式</i>
-</p>
-
-<p align="center">
-  <img src="screenshots/ICON Editor.png" alt="Icon Editor" width="800"><br>
-  <i>Icon Editor - 图标编辑器</i>
-</p>
-
-<p align="center">
-  <img src="screenshots/Wallpaper Editor.png" alt="Wallpaper Editor" width="800"><br>
-  <i>Wallpaper Editor - 壁纸编辑器</i>
-</p>
-
-<p align="center">
-  <img src="screenshots/Cities Editor.png" alt="Cities Editor" width="800"><br>
-  <i>Cities Editor - 城市管理</i>
-</p>
-
-<p align="center">
-  <img src="screenshots/Date Format.png" alt="Date Format Settings" width="800"><br>
-  <i>Date Format Settings - 日期格式设置</i>
 </p>
 
 ## ✨ Key Features
@@ -90,7 +48,7 @@
 
 ### From Chrome Web Store
 1. Visit the [Chrome Web Store](https://chrome.google.com/webstore/category/extensions) (coming soon)
-2. Search for "Ada&Ava Desktop for Chrome"
+2. Search for "A11 Tabs"
 3. Click "Add to Chrome" button
 
 ### Developer Mode Installation
@@ -145,7 +103,7 @@ Double-click anywhere on the page to enter edit mode. In edit mode, you can:
 
 ## 🔒 Privacy
 
-Ada&Ava Desktop for Chrome highly values user privacy:
+A11 Tabs highly values user privacy:
 - All data is stored locally using Chrome's storage.local API
 - No personal information or usage data is collected
 - No tracking or analytics code is included
@@ -207,7 +165,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE.txt) 
 
 ### 从Chrome Web Store安装
 1. 访问[Chrome Web Store](https://chrome.google.com/webstore/category/extensions)（即将上线）
-2. 搜索"Ada&Ava Desktop for Chrome"
+2. 搜索"A11 Tabs"
 3. 点击"添加到Chrome"按钮
 
 ### 开发者模式安装
@@ -262,7 +220,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE.txt) 
 
 ## 🔒 隐私说明
 
-Ada&Ava Desktop for Chrome 高度重视用户隐私：
+A11 Tabs 高度重视用户隐私：
 - 所有数据仅存储在本地，使用Chrome的storage.local API
 - 不收集任何个人信息或使用数据
 - 不包含任何跟踪或分析代码
@@ -290,67 +248,4 @@ Ada&Ava Desktop for Chrome 高度重视用户隐私：
 
 <p align="center">
   Made with ❤️ © 2024 Water Tang
-</p>
-
-## 更新历史
-
-### v1.3
-- 优化背景图片编辑器界面
-- 简化图片编辑流程
-- 提升用户体验
-
-### v1.2
-- 添加背景图片编辑功能
-- 支持图片裁剪和预览
-- 优化图片处理性能
-
-### v1.1
-- 添加多语言支持
-- 优化时间显示格式
-- 改进快捷方式编辑功能
-
-### v1.0
-- 首次发布
-- 基础功能实现
-
-## 安装方式
-
-1. 从 Chrome 网上应用店安装
-2. 打开新标签页即可使用
-
-## 使用说明
-
-1. 背景图片：
-   - 点击右键或进入编辑模式更换背景图片
-   - 支持本地图片上传
-   - 自动优化图片大小和质量
-
-2. 时间显示：
-   - 支持多个时区同时显示
-   - 可切换12/24小时制
-   - 支持自定义日期格式
-
-3. 快捷方式：
-   - 点击编辑模式添加/编辑快捷方式
-   - 拖拽调整位置
-   - 支持多个URL轮换打开
-
-4. 数据管理：
-   - 支持导出数据备份
-   - 支持导入恢复数据
-
-## 隐私说明
-
-- 所有数据存储在本地
-- 不收集任何用户信息
-- 无需任何特殊权限
-
-## 技术支持
-
-如有问题或建议，请通过以下方式联系：
-- 在 Chrome 网上应用店留言
-- 发送邮件至支持邮箱
-
-## 开发者
-
-Ada & Ava 
+</p> 

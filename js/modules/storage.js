@@ -108,7 +108,7 @@ export async function exportAllData() {
       showWeather: data.showWeather !== undefined ? data.showWeather : true,
       weatherCache: data.weatherCache || {},
       lastUpdateTime: data.lastUpdateTime || {},
-      version: '1.1'
+      version: '3.0'
     };
     
     // 转换为JSON字符串

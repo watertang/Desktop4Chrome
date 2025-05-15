@@ -6,7 +6,7 @@
 import { convertImageToBase64, showNotification, ModalManager } from './utils.js';
 import { getStoredData, saveToStorage } from './storage.js';
 import { t, applyI18nToHTML } from './i18n/index.js';
-import { initImageEditor, openEditor, loadImageToCanvas } from './imageEditor.js';
+import { initImageEditor, openEditor } from './imageEditor.js';
 
 // 快捷方式相关变量
 let shortcuts = []; // 快捷方式列表
@@ -242,30 +242,19 @@ function setupShortcutEventListeners() {
         // 读取文件并打开图片编辑器
         readFileAsBase64(file)
           .then(base64Data => {
-            // 创建新图片对象并加载
-            const img = new Image();
-            img.onload = () => {
-              // 打开图片编辑器
-              openEditor((processedImageData) => {
-                // 更新图标预览
-                updateIconPreview(processedImageData);
-                
-                // 更新隐藏输入框的值
-                if (shortcutIconInput) {
-                  shortcutIconInput.value = processedImageData;
-                }
-              });
+            // 打开图片编辑器
+            openEditor((processedImageData) => {
+              console.log('图片处理完成，更新图标预览');
+              // 更新图标预览
+              updateIconPreview(processedImageData);
               
-              // 加载图片到编辑器
-              loadImageToCanvas(img);
-            };
-            
-            img.onerror = (error) => {
-              console.error('加载图片失败:', error);
-              showNotification(t('icon_load_failed'), 'error');
-            };
-            
-            img.src = base64Data;
+              // 更新隐藏输入框的值
+              if (shortcutIconInput) {
+                shortcutIconInput.value = processedImageData;
+              } else {
+                console.error('找不到shortcutIconInput元素');
+              }
+            }, base64Data);
           })
           .catch(error => {
             console.error('读取图片文件失败:', error);
@@ -340,6 +329,7 @@ function setupShortcutEventListeners() {
   // 图标预览双击事件
   if (iconPreview) {
     iconPreview.addEventListener('dblclick', () => {
+      console.log('图标预览双击，打开图片编辑器');
       try {
         // 获取当前图标URL
         let currentIconUrl = '';
@@ -348,42 +338,33 @@ function setupShortcutEventListeners() {
         const previewImg = iconPreview.querySelector('img');
         if (previewImg && previewImg.src) {
           currentIconUrl = previewImg.src;
+          console.log('从预览图像获取图标URL:', currentIconUrl);
         } else if (shortcutIconInput && shortcutIconInput.value) {
           currentIconUrl = shortcutIconInput.value;
+          console.log('从输入框获取图标URL:', currentIconUrl);
         }
         
         // 确保URL是有效的
         if (!currentIconUrl || (!currentIconUrl.startsWith('data:') && !currentIconUrl.startsWith('http'))) {
-          showNotification(t('no_valid_icon'), 'error');
-          return;
+          console.log('图标URL无效或为空，不传递到编辑器');
+          currentIconUrl = '';
         }
         
-        // 先打开编辑器
-        openEditor((processedImageData) => {
+        console.log('打开图片编辑器，传递图标URL:', currentIconUrl);
+        
+        // 直接使用回调函数处理编辑后的图像
+        openEditor(function(processedImageData) {
+          console.log('图片处理完成，更新图标预览');
           // 更新图标预览
           updateIconPreview(processedImageData);
           
           // 更新隐藏输入框的值
           if (shortcutIconInput) {
             shortcutIconInput.value = processedImageData;
+          } else {
+            console.error('找不到shortcutIconInput元素');
           }
-        });
-        
-        // 创建新图片对象并加载
-        const img = new Image();
-        img.crossOrigin = 'anonymous'; // 添加跨域支持
-        
-        img.onload = () => {
-          // 加载图片到编辑器
-          loadImageToCanvas(img);
-        };
-        
-        img.onerror = (error) => {
-          console.error('加载图片失败:', error);
-          showNotification(t('icon_load_failed'), 'error');
-        };
-        
-        img.src = currentIconUrl;
+        }, currentIconUrl);
       } catch (error) {
         console.error('打开图片编辑器失败:', error);
         showNotification(t('editor_open_failed'), 'error');
@@ -992,57 +973,39 @@ function addUrlInput(url = '') {
     this.select();
   });
 
-  // 为URL输入框添加输入事件
-  urlInput.addEventListener('input', function() {
-    // 如果输入框不为空，尝试获取网站图标
-    if (this.value.trim() !== '') {
-      // 检查是否已经有自定义图标
-      const hasCustomIcon = shortcutIconInput && shortcutIconInput.value && 
-        (shortcutIconInput.value.startsWith('data:') || shortcutIconInput.value.startsWith('http'));
-      
-      if (!hasCustomIcon) {
-        // 只有在没有自定义图标时才尝试获取新图标
-        tryLoadIconFromUrl(this.value.trim())
-          .then(base64Data => {
-            if (base64Data) {
-              // 更新图标预览
-              updateIconPreview(base64Data);
-              
-              // 更新隐藏输入框的值
-              shortcutIconInput.value = base64Data;
-            }
-          })
-          .catch(error => {
-            console.error('处理图标失败:', error);
-          });
-      }
-    }
-    
-    // 更新删除按钮的显示状态
-    updateRemoveButtons();
-    
-    // 确保有一个空白输入框
-    ensureEmptyInputExists();
-  });
+  // 为URL输入框添加失去焦点事件
+  urlInput.addEventListener('blur', handleUrlBlur);
+  
+  // 为URL输入框添加按键事件
+  urlInput.addEventListener('keydown', handleUrlKeydown);
 
-  // 添加到DOM
-  urlButtons.appendChild(removeButton);
+  // 组装URL输入组
   urlInputContainer.appendChild(urlInput);
   urlInputContainer.appendChild(urlButtons);
+  urlButtons.appendChild(removeButton);
   urlGroup.appendChild(label);
   urlGroup.appendChild(urlInputContainer);
-  urlsContainer.appendChild(urlGroup);
-  
-  // 更新URL标签
+
+  // 如果URL不为空，将其插入到最后一个非空输入框之后
+  if (url) {
+    const lastNonEmptyInput = Array.from(urlGroups).findLast(group => {
+      const input = group.querySelector('.shortcut-url');
+      return input && input.value.trim();
+    });
+    
+    if (lastNonEmptyInput) {
+      lastNonEmptyInput.after(urlGroup);
+    } else {
+      urlsContainer.appendChild(urlGroup);
+    }
+  } else {
+    // 如果是空URL，直接添加到末尾
+    urlsContainer.appendChild(urlGroup);
+  }
+
+  // 更新URL标签和删除按钮
   updateUrlLabels();
-  
-  // 更新删除按钮
   updateRemoveButtons();
-  
-  // 确保有一个空白输入框
-  ensureEmptyInputExists();
-  
-  return urlInput;
 }
 
 /**
@@ -1520,39 +1483,19 @@ function ensureEmptyInputExists() {
   // 获取所有URL输入框
   const urlInputs = urlsContainer.querySelectorAll('.shortcut-url');
   
-  // 找到最后一个非空输入框的位置
-  let lastFilledInputIndex = -1;
-  urlInputs.forEach((input, index) => {
-    if (input.value.trim() !== '') {
-      lastFilledInputIndex = index;
+  // 检查是否有空白输入框
+  let hasEmptyInput = false;
+  urlInputs.forEach(input => {
+    if (input.value.trim() === '') {
+      hasEmptyInput = true;
     }
   });
   
-  // 检查是否有空白输入框在最后一个非空输入框之后
-  let hasEmptyInputAfterFilled = false;
-  urlInputs.forEach((input, index) => {
-    if (index > lastFilledInputIndex && input.value.trim() === '') {
-      hasEmptyInputAfterFilled = true;
-    }
-  });
-  
-  // 如果没有空白输入框在最后一个非空输入框之后，添加一个
-  if (!hasEmptyInputAfterFilled) {
-    console.log('添加一个空白输入框在最后一个非空输入框之后');
+  // 如果没有空白输入框，添加一个
+  if (!hasEmptyInput) {
+    console.log('添加一个空白输入框');
     addUrlInput('');
   }
-  
-  // 移除所有在最后一个空白输入框之后的空白输入框
-  let foundEmptyInput = false;
-  Array.from(urlInputs).reverse().forEach(input => {
-    if (input.value.trim() === '') {
-      if (foundEmptyInput) {
-        // 如果已经找到了一个空白输入框，删除当前这个
-        input.closest('.url-group').remove();
-      }
-      foundEmptyInput = true;
-    }
-  });
 }
 
 // 打开图标URL输入对话框
@@ -1675,21 +1618,16 @@ const handleUrlBlur = debounce(async function(event) {
   const url = input.value.trim();
   
   if (url && url.length > 3) {
-    // 检查是否已经有自定义图标
-    const hasCustomIcon = shortcutIconInput && shortcutIconInput.value && 
-      (shortcutIconInput.value.startsWith('data:') || shortcutIconInput.value.startsWith('http'));
-    
-    if (!hasCustomIcon) {
-      // 只有在没有自定义图标时才尝试获取新图标
-      try {
-        const iconData = await tryLoadIconFromUrl(url);
-        if (iconData) {
-          updateIconPreview(iconData);
-          shortcutIconInput.value = iconData;
-        }
-      } catch (error) {
-        console.warn('自动获取图标失败:', error);
+    // 尝试获取图标并更新预览
+    try {
+      const iconData = await tryLoadIconFromUrl(url);
+      if (iconData && !shortcutIconInput.value) {
+        // 只有在用户没有手动设置图标时才自动更新
+        updateIconPreview(iconData);
+        shortcutIconInput.value = iconData;
       }
+    } catch (error) {
+      console.warn('自动获取图标失败:', error);
     }
   }
 }, 500);
@@ -1817,32 +1755,39 @@ async function handleIconUrlInput(url) {
     
     // 尝试加载图片
     try {
-      // 创建新图片对象并加载
-      const img = new Image();
-      img.crossOrigin = 'anonymous'; // 添加跨域支持
+      // 不再尝试从Chrome缓存获取favicon，直接尝试加载URL
+      let iconData = null;
       
-      img.onload = () => {
-        // 打开图片编辑器
-        openEditor((processedImageData) => {
-          // 更新图标预览
-          updateIconPreview(processedImageData);
-          
-          // 更新隐藏输入框的值
-          if (shortcutIconInput) {
-            shortcutIconInput.value = processedImageData;
-          }
-        });
-        
-        // 加载图片到编辑器
-        loadImageToCanvas(img);
-      };
+      try {
+        // 尝试直接加载URL
+        iconData = await loadImageAsBase64(finalUrl);
+      } catch (directError) {
+        console.warn('直接加载图片失败:', directError);
+      }
       
-      img.onerror = (error) => {
-        console.error('加载图片失败:', error);
+      // 如果直接加载失败，尝试获取网站默认图标
+      if (!iconData) {
+        iconData = await getDefaultIconFromUrl(finalUrl);
+      }
+      
+      if (!iconData) {
         showNotification(t('icon_load_failed'), 'error');
-      };
+        return;
+      }
       
-      img.src = finalUrl;
+      // 打开图片编辑器
+      openEditor(function(processedImageData) {
+        console.log('图片处理完成，更新图标预览');
+        // 更新图标预览
+        updateIconPreview(processedImageData);
+        
+        // 更新隐藏输入框的值
+        if (shortcutIconInput) {
+          shortcutIconInput.value = processedImageData;
+        } else {
+          console.error('找不到shortcutIconInput元素');
+        }
+      }, iconData);
     } catch (error) {
       console.error('加载图标失败:', error);
       showNotification(t('icon_load_failed'), 'error');
@@ -1877,6 +1822,7 @@ function updateIconPreview(iconData) {
   
   // 添加双击事件监听器
   iconPreviewElement.addEventListener('dblclick', () => {
+    console.log('图标预览双击，打开图片编辑器');
     try {
       // 获取当前图标URL
       let currentIconUrl = '';
@@ -1885,39 +1831,33 @@ function updateIconPreview(iconData) {
       const previewImg = iconPreviewElement.querySelector('img');
       if (previewImg && previewImg.src) {
         currentIconUrl = previewImg.src;
+        console.log('从预览图像获取图标URL:', currentIconUrl);
       } else if (shortcutIconInput && shortcutIconInput.value) {
         currentIconUrl = shortcutIconInput.value;
+        console.log('从输入框获取图标URL:', currentIconUrl);
       }
       
       // 确保URL是有效的
       if (!currentIconUrl || (!currentIconUrl.startsWith('data:') && !currentIconUrl.startsWith('http'))) {
-        showNotification(t('no_valid_icon'), 'error');
-        return;
+        console.log('图标URL无效或为空，不传递到编辑器');
+        currentIconUrl = '';
       }
       
-      // 创建新图片对象并加载
-      const img = new Image();
-      img.onload = () => {
-        // 打开图片编辑器
-        openEditor((processedImageData) => {
-          // 更新图标预览
-          updateIconPreview(processedImageData);
-          
-          // 更新隐藏输入框的值
-          if (shortcutIconInput) {
-            shortcutIconInput.value = processedImageData;
-          }
-        });
+      console.log('打开图片编辑器，传递图标URL:', currentIconUrl);
+      
+      // 直接使用回调函数处理编辑后的图像
+      openEditor(function(processedImageData) {
+        console.log('图片处理完成，更新图标预览');
+        // 更新图标预览
+        updateIconPreview(processedImageData);
         
-        // 加载图片到编辑器
-        loadImageToCanvas(img);
-      };
-      
-      img.onerror = () => {
-        showNotification(t('icon_load_failed'), 'error');
-      };
-      
-      img.src = currentIconUrl;
+        // 更新隐藏输入框的值
+        if (shortcutIconInput) {
+          shortcutIconInput.value = processedImageData;
+        } else {
+          console.error('找不到shortcutIconInput元素');
+        }
+      }, currentIconUrl);
     } catch (error) {
       console.error('打开图片编辑器失败:', error);
       showNotification(t('editor_open_failed'), 'error');
@@ -2239,5 +2179,44 @@ function createDefaultIcon(resolve) {
     console.error('创建默认图标失败:', error);
     // 如果创建默认图标失败，返回一个空白图标
     resolve('data:image/png;base64,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');
+  }
+}
+
+/**
+ * 重置图标为默认图标
+ */
+function resetIconToDefault() {
+  try {
+    console.log('重置图标为默认');
+    // 清空图标输入框的值
+    if (shortcutIconInput) {
+      shortcutIconInput.value = '';
+    }
+    
+    // 获取当前编辑的快捷方式
+    let shortcut = null;
+    if (currentEditIndex !== -1 && shortcuts[currentEditIndex]) {
+      shortcut = shortcuts[currentEditIndex];
+    }
+    
+    // 如果有URL，尝试获取网站默认图标
+    if (shortcut && shortcut.urls && shortcut.urls.length > 0) {
+      const firstUrl = shortcut.urls[0];
+      try {
+        const url = new URL(firstUrl);
+        const domain = url.hostname;
+        const defaultIconUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=64`;
+        updateIconPreview(defaultIconUrl);
+      } catch (error) {
+        console.error('解析URL失败:', error);
+        updateIconPreview(null);
+      }
+    } else {
+      // 如果没有URL，显示默认图标
+      updateIconPreview(null);
+    }
+  } catch (error) {
+    console.error('重置图标失败:', error);
+    showNotification(t('reset_icon_failed'), 'error');
   }
 }

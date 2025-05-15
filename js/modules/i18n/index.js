@@ -26,30 +26,6 @@ let currentLanguage = 'zh-CN';
 let translations = LANGUAGE_PACKS['zh-CN'];
 
 /**
- * 获取系统语言设置
- * @returns {string} 匹配的语言代码
- */
-function getSystemLanguage() {
-  // 获取浏览器语言设置
-  const browserLang = navigator.language || navigator.userLanguage;
-  console.log('浏览器语言设置:', browserLang);
-  
-  // 将浏览器语言转换为我们支持的语言代码
-  const langCode = browserLang.toLowerCase();
-  
-  if (langCode.startsWith('zh')) {
-    // 对于中文，区分简体和繁体
-    if (langCode.includes('tw') || langCode.includes('hk')) {
-      return 'zh-TW';
-    }
-    return 'zh-CN';
-  } else {
-    // 其他语言默认使用英文
-    return 'en';
-  }
-}
-
-/**
  * 初始化国际化模块
  */
 export async function initI18n() {
@@ -64,15 +40,7 @@ export async function initI18n() {
       translations = LANGUAGE_PACKS[currentLanguage];
       console.log('使用存储的语言设置:', currentLanguage);
     } else {
-      // 如果没有存储的语言设置，使用系统语言
-      const systemLang = getSystemLanguage();
-      currentLanguage = systemLang;
-      translations = LANGUAGE_PACKS[currentLanguage];
-      console.log('使用系统语言设置:', currentLanguage);
-      
-      // 保存语言设置到存储
-      await saveToStorage({ language: currentLanguage });
-      console.log('已保存语言设置:', currentLanguage);
+      console.log('没有找到存储的语言设置，使用默认语言:', currentLanguage);
     }
     
     console.log('国际化模块初始化完成，当前语言:', currentLanguage);

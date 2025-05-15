@@ -4,7 +4,7 @@
 
 export default {
   // 通用
-  "app_name": "Ada&Ava Desktop for Chrome",
+  "app_name": "A11 Tabs",
   "ok": "确定",
   "cancel": "取消",
   "save": "保存",

@@ -4,7 +4,7 @@
 
 export default {
   // General
-  "app_name": "Ada&Ava Desktop for Chrome",
+  "app_name": "A11 Tabs",
   "ok": "OK",
   "cancel": "Cancel",
   "save": "Save",
